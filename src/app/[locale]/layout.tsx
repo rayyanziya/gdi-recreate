@@ -24,9 +24,9 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "PT Global Dataverse Indonesia — Systems. Ventures. Execution.",
+  title: "PT Global Dataverse Indonesia — Systems. Execution.",
   description:
-    "GDI is an AI-first systems integrator and technical venture builder. We bridge the gap between ambitious ideas and technical execution.",
+    "GDI is an AI-first systems integrator delivering end-to-end digitalization for organizations across Indonesia.",
   icons: { icon: "/icon.png" },
 };
 

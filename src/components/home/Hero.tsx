@@ -65,7 +65,7 @@ export function Hero() {
         <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-[5.5rem] font-black leading-[1.05] tracking-tight max-w-3xl mb-8 text-navy-text">
           <AnimatedWords text={t("headline1")} baseDelay={0.2} />
           <br />
-          <AnimatedWords text={t("headline2")} baseDelay={0.42} />
+          { /* <AnimatedWords text={t("headline2")} baseDelay={0.42} /> */ } 
         </h1>
 
         {/* Subtext */}
