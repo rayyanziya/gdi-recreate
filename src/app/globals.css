@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* ─── Light base palette ─── */
+  --color-base:         #ffffff;
+  --color-surface:      #f4f7fb;
+  --color-surface-light:#eef2f7;
+  --color-accent:       #0099bb;
+  --color-accent-dim:   rgba(0, 153, 187, 0.10);
+  --color-primary:      #0f172a;
+  --color-muted:        #64748b;
+  --color-border:       #e2e8f0;
+  --color-border-light: #f0f3f7;
+  --color-faint:        #dde4ed;   /* large decorative numbers/watermarks */
+
+  /* ─── Navy — explicit dark sections ─── */
+  --color-navy:         #0d1f35;
+  --color-navy-surface: #0c1a2e;
+  --color-navy-border:  #1e3a52;
+  --color-navy-text:    #f0f4f8;
+  --color-navy-muted:   #94a3b8;
+
+  /* ─── Fonts ─── */
+  --font-sans:  var(--font-jakarta);   /* Plus Jakarta Sans — body & labels */
+  --font-mono:  var(--font-jakarta);   /* Remove robotic mono feel */
+  --font-display: var(--font-sora);    /* Sora — headings */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─── Headings: Sora ─── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sora, var(--font-jakarta, sans-serif));
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Marquee & ticker animations ─── */
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.animate-marquee-left  { animation: marquee-left  45s linear infinite; }
+.animate-marquee-right { animation: marquee-right 45s linear infinite; }
+.animate-ticker        { animation: ticker        35s linear infinite; }
+
+/* ─── Dot grid — light version (for dark hero sections) ─── */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.10) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ─── Base ─── */
+html {
+  scroll-behavior: auto;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #ffffff;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar ─── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(0, 153, 187, 0.15);
+  color: #0f172a;
 }
