@@ -88,6 +88,7 @@ export function bookingEmailHtml(params: {
 export function escalationEmailHtml(params: {
   userEmail: string;
   userName?: string;
+  topic?: string;
   messages: ChatMessage[];
 }): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
@@ -108,6 +109,7 @@ export function escalationEmailHtml(params: {
                 <td style="padding:12px 16px;font-size:15px;font-weight:700;"><a href="mailto:${params.userEmail}" style="color:#0099bb;">${params.userEmail}</a></td>
               </tr>
               ${params.userName ? `<tr style="border-top:1px solid #e2e8f0;"><td style="padding:12px 16px;font-size:12px;color:#64748b;font-weight:600;">Name</td><td style="padding:12px 16px;font-size:14px;color:#0f172a;">${params.userName}</td></tr>` : ""}
+              ${params.topic ? `<tr style="border-top:1px solid #e2e8f0;"><td style="padding:12px 16px;font-size:12px;color:#64748b;font-weight:600;">Topic</td><td style="padding:12px 16px;font-size:14px;color:#0f172a;">${params.topic}</td></tr>` : ""}
             </table>
           </td>
         </tr>

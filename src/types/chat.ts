@@ -14,6 +14,7 @@ export interface EscalateRequestBody {
   messages: ChatMessage[];
   userEmail: string;
   userName?: string;
+  topic?: string;
 }
 
 export interface BookingRequestBody {

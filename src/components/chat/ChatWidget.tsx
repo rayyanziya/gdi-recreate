@@ -46,6 +46,11 @@ export function ChatWidget() {
   const [collectedEmail, setCollectedEmail] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
 
+  const [showHumanForm, setShowHumanForm] = useState(false);
+  const [humanEmail, setHumanEmail] = useState("");
+  const [humanTopic, setHumanTopic] = useState("");
+  const [humanFormSubmitting, setHumanFormSubmitting] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -133,6 +138,25 @@ export function ChatWidget() {
     },
     [collectedEmail, emailSent]
   );
+
+  const handleHumanEscalate = useCallback(async () => {
+    const email = humanEmail.trim();
+    const topic = humanTopic.trim();
+    if (!email || !topic) return;
+    setHumanFormSubmitting(true);
+    try {
+      await fetch("/api/escalate?type=escalate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, userEmail: email, topic }),
+      });
+    } catch { /* silently fail */ }
+    setShowHumanForm(false);
+    setHumanEmail("");
+    setHumanTopic("");
+    setHumanFormSubmitting(false);
+    switchToHuman(messages);
+  }, [humanEmail, humanTopic, messages, switchToHuman]);
 
   const sendMessage = useCallback(async () => {
     const trimmed = input.trim();
@@ -321,31 +345,83 @@ export function ChatWidget() {
 
               {/* Input */}
               <div className="shrink-0 border-t border-navy-border bg-navy-surface px-3 py-3">
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={isHuman ? "Message GDI team..." : "Ask about GDI..."}
-                    disabled={isLoading}
-                    className="flex-1 bg-navy border border-navy-border text-navy-text text-sm placeholder:text-navy-muted/50 px-3 py-2.5 outline-none focus:border-accent transition-colors duration-200 disabled:opacity-50"
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={isLoading || !input.trim()}
-                    aria-label="Send message"
-                    className="shrink-0 bg-accent hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-white px-4 py-2.5 transition-colors duration-200"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M15.707 8l-7-7a1 1 0 00-1.414 1.414L12.586 7H1a1 1 0 000 2h11.586l-5.293 5.293a1 1 0 001.414 1.414l7-7a1 1 0 000-1.414z" />
-                    </svg>
-                  </button>
-                </div>
-                <p className="text-center text-navy-muted text-[10px] mt-2 tracking-wide">
-                  GDI · contact@dataverseindonesia.com
-                </p>
+                {showHumanForm ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-navy-text text-xs font-semibold mb-0.5">Connect with the GDI team</p>
+                    <input
+                      type="email"
+                      value={humanEmail}
+                      onChange={(e) => setHumanEmail(e.target.value)}
+                      placeholder="Your email address"
+                      className="bg-navy border border-navy-border text-navy-text text-sm placeholder:text-navy-muted/50 px-3 py-2 outline-none focus:border-accent transition-colors duration-200"
+                    />
+                    <input
+                      type="text"
+                      value={humanTopic}
+                      onChange={(e) => setHumanTopic(e.target.value)}
+                      placeholder="What do you need help with?"
+                      className="bg-navy border border-navy-border text-navy-text text-sm placeholder:text-navy-muted/50 px-3 py-2 outline-none focus:border-accent transition-colors duration-200"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleHumanEscalate}
+                        disabled={humanFormSubmitting || !humanEmail.trim() || !humanTopic.trim()}
+                        className="flex-1 bg-accent hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-white text-xs font-semibold py-2 transition-colors duration-200"
+                      >
+                        {humanFormSubmitting ? "Connecting..." : "Connect now"}
+                      </button>
+                      <button
+                        onClick={() => setShowHumanForm(false)}
+                        className="px-3 py-2 border border-navy-border text-navy-muted hover:text-navy-text text-xs cursor-pointer transition-colors duration-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={isHuman ? "Message GDI team..." : "Ask about GDI..."}
+                        disabled={isLoading}
+                        className="flex-1 bg-navy border border-navy-border text-navy-text text-sm placeholder:text-navy-muted/50 px-3 py-2.5 outline-none focus:border-accent transition-colors duration-200 disabled:opacity-50"
+                      />
+                      <button
+                        onClick={sendMessage}
+                        disabled={isLoading || !input.trim()}
+                        aria-label="Send message"
+                        className="shrink-0 bg-accent hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-white px-4 py-2.5 transition-colors duration-200"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M15.707 8l-7-7a1 1 0 00-1.414 1.414L12.586 7H1a1 1 0 000 2h11.586l-5.293 5.293a1 1 0 001.414 1.414l7-7a1 1 0 000-1.414z" />
+                        </svg>
+                      </button>
+                    </div>
+                    {!isHuman && (
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-navy-muted text-[10px] tracking-wide">
+                          GDI · contact@dataverseindonesia.com
+                        </p>
+                        <button
+                          onClick={() => setShowHumanForm(true)}
+                          className="text-navy-muted hover:text-accent text-[10px] underline underline-offset-2 cursor-pointer transition-colors duration-200"
+                        >
+                          Talk to a person
+                        </button>
+                      </div>
+                    )}
+                    {isHuman && (
+                      <p className="text-center text-navy-muted text-[10px] mt-2 tracking-wide">
+                        GDI · contact@dataverseindonesia.com
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
 
             </div>
