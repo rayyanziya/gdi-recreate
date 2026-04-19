@@ -61,7 +61,7 @@ export function PathToggle() {
               <button
                 key={key}
                 onClick={() => setActive(key)}
-                className={`relative py-5 pr-10 text-sm font-semibold transition-colors duration-200 ${
+                className={`relative py-5 pr-10 text-sm font-semibold transition-colors duration-200 cursor-pointer ${
                   active === key ? "text-primary" : "text-muted hover:text-primary"
                 }`}
               >

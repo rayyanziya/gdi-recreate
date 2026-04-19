@@ -131,7 +131,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={sending}
-                className="self-start inline-flex items-center gap-2 bg-navy text-navy-text px-8 py-4 text-sm font-semibold hover:bg-accent transition-colors duration-200 disabled:opacity-60"
+                className="self-start inline-flex items-center gap-2 bg-navy text-navy-text px-8 py-4 text-sm font-semibold hover:bg-accent transition-colors duration-200 disabled:opacity-60 cursor-pointer"
               >
                 {sending ? t("form_sending") : t("form_submit")}
                 {!sending && <span aria-hidden>→</span>}
