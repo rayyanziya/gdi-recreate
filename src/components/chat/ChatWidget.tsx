@@ -23,8 +23,11 @@ function matchesPhrases(text: string, phrases: string[]): boolean {
   return phrases.some((p) => lower.includes(p));
 }
 
+type ChatMode = "ai" | "human";
+
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<ChatMode>("ai");
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +37,7 @@ export function ChatWidget() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const crispListenerRef = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,7 +47,7 @@ export function ChatWidget() {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 300);
   }, [isOpen]);
 
-  // Scan all messages for an email address
+  // Scan conversation for an email address
   useEffect(() => {
     if (collectedEmail) return;
     for (const msg of messages) {
@@ -51,6 +55,39 @@ export function ChatWidget() {
       if (email) { setCollectedEmail(email); break; }
     }
   }, [messages, collectedEmail]);
+
+  // Switch to live human mode via Crisp
+  const switchToHuman = useCallback((allMessages: ChatMessage[]) => {
+    setMode("human");
+
+    if (crispListenerRef.current || typeof window === "undefined" || !window.$crisp) return;
+    crispListenerRef.current = true;
+
+    // Send full transcript to agent so they have context
+    const transcript = allMessages
+      .map((m) => `${m.role === "user" ? "Visitor" : "AI"}: ${m.content}`)
+      .join("\n\n");
+
+    window.$crisp.push([
+      "do",
+      "message:send",
+      ["text", `[AI Chat Transcript — visitor is requesting human support]\n\n${transcript}`],
+    ]);
+
+    // Listen for agent replies and show them in our widget
+    window.$crisp.push([
+      "on",
+      "message:received",
+      (msg: { type: string; content: string }) => {
+        if (msg.type === "text" && msg.content) {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: msg.content },
+          ]);
+        }
+      },
+    ]);
+  }, []);
 
   const sendBookingEmail = useCallback(
     async (finalMsg: string, allMessages: ChatMessage[]) => {
@@ -61,12 +98,7 @@ export function ChatWidget() {
         await fetch("/api/escalate?type=booking", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: allMessages,
-            name: "",
-            email,
-            description: "",
-          }),
+          body: JSON.stringify({ messages: allMessages, name: "", email, description: "" }),
         });
       } catch { /* silently fail */ }
     },
@@ -94,15 +126,25 @@ export function ChatWidget() {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
 
+    const userMsg: ChatMessage = { role: "user", content: trimmed };
+    const nextMessages = [...messages, userMsg];
+    setInput("");
+
+    // ── Human mode: route to Crisp, no AI stream ─────────────────────────
+    if (mode === "human") {
+      setMessages(nextMessages);
+      if (typeof window !== "undefined" && window.$crisp) {
+        window.$crisp.push(["do", "message:send", ["text", trimmed]]);
+      }
+      return;
+    }
+
+    // ── AI mode: stream from GPT-4.1 ─────────────────────────────────────
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const userMsg: ChatMessage = { role: "user", content: trimmed };
-    const nextMessages = [...messages, userMsg];
-
     setMessages([...nextMessages, { role: "assistant", content: "" }]);
-    setInput("");
     setIsLoading(true);
 
     try {
@@ -122,7 +164,6 @@ export function ChatWidget() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const lines = decoder.decode(value, { stream: true }).split("\n");
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
@@ -146,23 +187,27 @@ export function ChatWidget() {
         ...nextMessages,
         { role: "assistant", content: full },
       ];
+
       await sendBookingEmail(full, finalMessages);
-      await sendEscalationEmail(full, finalMessages);
+
+      if (matchesPhrases(full, ESCALATION_PHRASES)) {
+        await sendEscalationEmail(full, finalMessages);
+        switchToHuman(finalMessages);
+      }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return;
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: "assistant",
-          content:
-            "Sorry, I ran into a connection issue. Please try again, or reach out directly at contact@dataverseindonesia.com.",
+          content: "Sorry, I ran into a connection issue. Please try again, or reach out directly at contact@dataverseindonesia.com.",
         };
         return updated;
       });
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, sendBookingEmail, sendEscalationEmail]);
+  }, [input, isLoading, messages, mode, sendBookingEmail, sendEscalationEmail, switchToHuman]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -174,6 +219,7 @@ export function ChatWidget() {
   const lastMsg = messages[messages.length - 1];
   const showTypingDots = isLoading && lastMsg?.role === "assistant" && lastMsg.content === "";
   const showStreamCursor = isLoading && lastMsg?.role === "assistant" && lastMsg.content !== "";
+  const isHuman = mode === "human";
 
   return (
     <>
@@ -195,12 +241,16 @@ export function ChatWidget() {
               <div className="flex items-center justify-between px-5 py-4 border-b border-navy-border bg-navy-surface shrink-0">
                 <div className="flex items-center gap-3">
                   <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent" />
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 ${isHuman ? "bg-emerald-400" : "bg-accent"}`} />
+                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isHuman ? "bg-emerald-400" : "bg-accent"}`} />
                   </span>
                   <div>
-                    <p className="text-navy-text text-sm font-semibold leading-none">GDI Assistant</p>
-                    <p className="text-navy-muted text-xs mt-0.5">PT Global Dataverse Indonesia</p>
+                    <p className="text-navy-text text-sm font-semibold leading-none">
+                      {isHuman ? "GDI Team" : "GDI Assistant"}
+                    </p>
+                    <p className="text-navy-muted text-xs mt-0.5">
+                      {isHuman ? "Live support" : "PT Global Dataverse Indonesia"}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -213,6 +263,13 @@ export function ChatWidget() {
                   </svg>
                 </button>
               </div>
+
+              {/* Human mode banner */}
+              {isHuman && (
+                <div className="shrink-0 px-4 py-2.5 bg-emerald-950/40 border-b border-emerald-900/40 text-xs text-emerald-400 text-center">
+                  You&apos;re now connected to the GDI team
+                </div>
+              )}
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
@@ -259,7 +316,7 @@ export function ChatWidget() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask about GDI..."
+                    placeholder={isHuman ? "Message GDI team..." : "Ask about GDI..."}
                     disabled={isLoading}
                     className="flex-1 bg-navy border border-navy-border text-navy-text text-sm placeholder:text-navy-muted/50 px-3 py-2.5 outline-none focus:border-accent transition-colors duration-200 disabled:opacity-50"
                   />

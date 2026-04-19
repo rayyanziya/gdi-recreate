@@ -8,6 +8,7 @@ import { LenisProvider } from "@/providers/LenisProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import { CrispProvider } from "@/providers/CrispProvider";
 import "../globals.css";
 
 const sora = Sora({
@@ -58,6 +59,7 @@ export default async function LocaleLayout({
             <Navbar />
             <main>{children}</main>
             <Footer />
+            <CrispProvider />
             <ChatWidget />
           </LenisProvider>
         </NextIntlClientProvider>
