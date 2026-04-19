@@ -10,8 +10,20 @@ const INITIAL_MESSAGE: ChatMessage = {
     "Hi, I'm GDI Assistant. I can answer questions about GDI's services, share examples of our past projects, or help you book a call with the team.\n\nAre you an organization looking to modernize operations, or a founder looking for a long-term technical partner?",
 };
 
-const BOOKING_PHRASES = ["i've noted all of this for the gdi team"];
-const ESCALATION_PHRASES = ["a gdi team member will be in touch"];
+const BOOKING_PHRASES = [
+  "i've noted all of this for the gdi team",
+  "i've noted this for the gdi team",
+  "noted all of this for the gdi team",
+];
+const ESCALATION_PHRASES = [
+  "a gdi team member will be in touch",
+  "gdi team member will be in touch",
+  "a gdi team member will reach out",
+  "team member will reach out to you",
+  "team member will contact you",
+  "will be in touch at",
+  "will reach out to you at that address",
+];
 
 function extractEmail(text: string): string | null {
   const match = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
