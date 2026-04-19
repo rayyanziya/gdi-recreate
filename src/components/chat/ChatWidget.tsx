@@ -25,6 +25,38 @@ const ESCALATION_PHRASES = [
   "will reach out to you at that address",
 ];
 
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**"))
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*"))
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    return part;
+  });
+}
+
+function renderMarkdown(content: string): React.ReactNode {
+  const lines = content.split("\n");
+  return lines.map((line, i) => {
+    const isBullet = /^[-*]\s/.test(line);
+    if (isBullet) {
+      return (
+        <div key={i} className="flex gap-2">
+          <span className="shrink-0 mt-px">•</span>
+          <span>{renderInline(line.replace(/^[-*]\s/, ""))}</span>
+        </div>
+      );
+    }
+    return (
+      <span key={i}>
+        {renderInline(line)}
+        {i < lines.length - 1 && "\n"}
+      </span>
+    );
+  });
+}
+
 function extractEmail(text: string): string | null {
   const match = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
   return match ? match[0] : null;
@@ -308,7 +340,7 @@ export function ChatWidget() {
               )}
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+              <div data-lenis-prevent className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 flex flex-col gap-3">
                 {messages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div
@@ -318,7 +350,7 @@ export function ChatWidget() {
                           : "bg-navy-surface text-navy-text border border-navy-border"
                       }`}
                     >
-                      {msg.content}
+                      {msg.role === "user" ? msg.content : renderMarkdown(msg.content)}
                       {showStreamCursor && i === messages.length - 1 && (
                         <span className="inline-block w-0.5 h-3.5 bg-accent ml-0.5 animate-pulse align-middle" />
                       )}
