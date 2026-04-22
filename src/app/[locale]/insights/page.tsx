@@ -1,16 +1,25 @@
+import { supabase } from "@/lib/supabase";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Link } from "@/i18n/navigation";
-import { articles, Article } from "@/lib/articles";
+
+type ArticlePreview = {
+  id: number;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  author: string;
+  author_role: string;
+  published_at: string | null;
+};
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+    day: "numeric", month: "short", year: "numeric",
   }).format(new Date(iso));
 }
 
-function InsightCard({ article }: { article: Article }) {
+function InsightCard({ article }: { article: ArticlePreview }) {
   return (
     <Link
       href={`/insights/${article.slug}`}
@@ -20,7 +29,9 @@ function InsightCard({ article }: { article: Article }) {
         <p className="text-xs tracking-widest text-accent uppercase font-medium">
           {article.category}
         </p>
-        <p className="text-xs text-muted">{formatDate(article.date)}</p>
+        {article.published_at && (
+          <p className="text-xs text-muted">{formatDate(article.published_at)}</p>
+        )}
       </div>
       <h3 className="text-xl font-bold text-primary mb-3 group-hover:text-accent transition-colors duration-200 leading-snug">
         {article.title}
@@ -35,10 +46,21 @@ function InsightCard({ article }: { article: Article }) {
   );
 }
 
-export default function InsightsPage() {
+export default async function InsightsPage() {
+  let articles: ArticlePreview[] = [];
+  try {
+    const { data } = await supabase
+      .from("articles")
+      .select("id, slug, title, excerpt, category, author, author_role, published_at")
+      .eq("published", true)
+      .order("published_at", { ascending: false });
+    articles = data || [];
+  } catch {
+    // Supabase not configured
+  }
+
   return (
     <>
-      {/* Hero */}
       <section className="pt-32 pb-24 lg:pb-28 border-b border-border">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
           <ScrollReveal>
@@ -54,7 +76,6 @@ export default function InsightsPage() {
         </div>
       </section>
 
-      {/* Articles */}
       <section className="max-w-[1400px] mx-auto px-6 lg:px-10 py-20 lg:py-28">
         {articles.length === 0 ? (
           <ScrollReveal>
@@ -68,7 +89,7 @@ export default function InsightsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {articles.map((article) => (
-              <InsightCard key={article.slug} article={article} />
+              <InsightCard key={article.id} article={article} />
             ))}
           </div>
         )}
