@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   title: "PT Global Dataverse Indonesia — Systems. Execution.",
   description:
     "GDI is an AI-first systems integrator delivering end-to-end digitalization for organizations across Indonesia.",
-  icons: { icon: "/icon.png" },
+  icons: { icon: "/logo.png" },
 };
 
 export function generateStaticParams() {

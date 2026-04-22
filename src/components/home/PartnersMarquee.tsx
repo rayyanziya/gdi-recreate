@@ -9,6 +9,7 @@ const row1 = [
   { src: "/logos/azure.png",     alt: "Azure" },
   { src: "/logos/anthropic.svg", alt: "Anthropic" },
   { src: "/logos/openai.png",    alt: "OpenAI" },
+  { src: "/logos/crisp.png",     alt: "Crisp" },
   { src: "/logos/telkom.webp",   alt: "Telkom" },
   { src: "/logos/huawei.png",    alt: "Huawei" },
   { src: "/logos/ailo.png",      alt: "AILO" },
